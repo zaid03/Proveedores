@@ -469,7 +469,6 @@ export class ProveedoreesComponent {
   }
 
   showArticulos(proveedore: any){
-    
     this.selectedProveedor = proveedore;
     sessionStorage.setItem('tercod', proveedore.tercod);
     const tercod = sessionStorage.getItem('tercod');
@@ -484,6 +483,16 @@ export class ProveedoreesComponent {
     this.http.get<any[]>(`http://localhost:8080/api/more/by-apr/${this.entcod}/${tercod}`)
       .subscribe({ next: (response) => {
         this.articulos = response;
+        console.log(this.articulos);
+        const afacod = this.articulos.afacod;
+        const asucod = this.articulos.asucod;
+        const artcod = this.articulos.artcod;
+
+        console.log(artcod);
+        if (this.articulos.artcod === '*'){
+          this.http.get<any[]>(`http://localhost:8080/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`)
+        }
+
         if (response.length === 0) {
           this.nocontactmessage = 'No se encontraron artículos.';
         }

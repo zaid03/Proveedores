@@ -30,4 +30,14 @@ public class AsuController {
             @PathVariable String asudes) {
         return asuRepository.findByENTAndASUDESContaining(ent, asudes);
     }
+
+    //find an art name
+    @GetMapping("/art-name/{ent}/{afacod}/{asucod}")
+    public List<Asu> getArtName(
+        @PathVariable int ent,
+        @PathVariable String afacod,
+        @PathVariable String asucod) 
+        {
+            return asuRepository.getArtName(ent, afacod, asucod);
+        }
 }
