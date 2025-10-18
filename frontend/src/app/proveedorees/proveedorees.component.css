@@ -94,6 +94,7 @@ app-sidebar {
 }
 
 .search-button {
+  margin-left: 10px;
   background-color: #094fa3;
   color: white;
   border: none;

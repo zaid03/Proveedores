@@ -17,6 +17,7 @@ import autoTable from 'jspdf-autotable';
 })
 export class ProveedoreesComponent {
   proveedores: any[] = [];
+  private backupProveedores: any[] = [];
   searchTerm: string = '';
   filterOption: string = 'noBloqueados';
   page = 0;
@@ -83,6 +84,7 @@ export class ProveedoreesComponent {
             alert('Error: ' + response.error);
           } else {
             this.proveedores = response;
+            this.backupProveedores = Array.isArray(response) ? [...response] : [];
             this.page = 0;
           }
         },
@@ -147,6 +149,18 @@ export class ProveedoreesComponent {
     this.contactIsError = false;
     this.articulosMessage = '';
     this.articleIsError = false;
+    this.page = 0;
+  }
+
+  onSearchFormSubmit(event: Event) {
+    event.preventDefault();
+    this.search();
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    this.error = null;
+    this.proveedores = [...this.backupProveedores];
     this.page = 0;
   }
 
