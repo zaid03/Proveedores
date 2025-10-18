@@ -63,7 +63,7 @@ export class EntComponent implements OnInit {
       .subscribe({
         next: resp => {
           sessionStorage.setItem('mnucods', JSON.stringify(resp));
-          this.router.navigate(['/eje']);
+          this.router.navigate(['/dashboard']);
         },
         error: err => {
           console.error('mnucods error status:', err.status, 'body:', err.error);

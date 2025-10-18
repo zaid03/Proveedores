@@ -79,7 +79,6 @@ export class DashboardComponent implements OnInit {
   }
 
   proveedorees(): void {
-    // optional: enforce permission before navigating
     if (this.isDisabled('acTer')) {
       console.warn('Not allowed: acTer');
       return;
