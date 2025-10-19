@@ -482,16 +482,42 @@ export class ProveedoreesComponent {
     
     this.http.get<any[]>(`http://localhost:8080/api/more/by-apr/${this.entcod}/${tercod}`)
       .subscribe({ next: (response) => {
-        this.articulos = response;
-        console.log(this.articulos);
-        const afacod = this.articulos.afacod;
-        const asucod = this.articulos.asucod;
-        const artcod = this.articulos.artcod;
+        this.articulos = Array.isArray(response) ? response : (response ? [response] : []);
 
-        console.log(artcod);
-        if (this.articulos.artcod === '*'){
-          this.http.get<any[]>(`http://localhost:8080/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`)
-        }
+        this.articulos.forEach((row: any, index: number) => {
+          const artcod = String(row?.artcod ?? '').trim();
+          const afacod = String(row?.afacod ?? '').trim();
+          const asucod = String(row?.asucod?? '').trim();
+          console.log(`row ${index}: artcod="${artcod}", afacod="${afacod}", asucod="${asucod}"`, row);
+
+          if (artcod === '*'){
+            if(asucod === '*') {
+              console.log(`row ${index}: artcod="*" and asucod="*"`, row);
+              this.http.get<any[]>(`http://localhost:8080/api/afa/art-name/${this.entcod}/${afacod}`).subscribe({ next: (response) => {
+                const respArray = Array.isArray(response) ? response : (response ? [response] : []);
+                const afades = respArray[0]?.afades;
+                console.log(afades);
+                row.description = String(afades).trim();
+              }})
+            } else {
+              console.log(`row ${index}: artcod="*" but asucod="${asucod}"`, row);
+              this.http.get<any[]>(`http://localhost:8080/api/asu/art-name/${this.entcod}/${afacod}/${asucod}`).subscribe({ next: (response) => {
+                const respArray = Array.isArray(response) ? response : (response ? [response] : []);
+                const asudes = respArray[0]?.asudes;
+                console.log(asudes);
+                row.description = String(asudes).trim();
+              }})
+            }
+          } else {
+            console.log(`row ${index}: artcod="${artcod}", afacod="${afacod}", asucod="${asucod}"`, row);
+            this.http.get<any>(`http://localhost:8080/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`).subscribe({ next: (response) => {
+              const respArray = Array.isArray(response) ? response : (response ? [response] : []);
+              const afades = respArray[0]?.artdes;
+              console.log(afades);
+              row.description = String(afades).trim();
+            }})
+          }
+        });
 
         if (response.length === 0) {
           this.nocontactmessage = 'No se encontraron artículos.';
