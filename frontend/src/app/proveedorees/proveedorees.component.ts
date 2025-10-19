@@ -1104,5 +1104,5 @@ export class ProveedoreesComponent {
     this.clearSelectedProveedores();
     this.showMessage('Elementos eliminados de la lista local.', false, 3000);
   }
-//still need to add a check for the proveedor if it exists in db then dont fucking add it
+//still need to add a check for the proveedor if it exists in db then dont add it
 }
