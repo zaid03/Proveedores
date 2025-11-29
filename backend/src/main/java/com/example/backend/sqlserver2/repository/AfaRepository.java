@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import com.example.backend.sqlserver2.model.Afa;
 import com.example.backend.sqlserver2.model.AfaId;
-import com.example.backend.sqlserver2.model.Asu;
 
 @Repository
 public interface AfaRepository extends JpaRepository<Afa, AfaId> {

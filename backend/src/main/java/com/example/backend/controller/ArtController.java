@@ -40,6 +40,6 @@ public class ArtController {
         @PathVariable String asucod,
         @PathVariable String artcod) 
         {
-            return artRepository.findArtName(ent, afacod, asucod, artcod);
+        return artRepository.findArtName(ent, afacod, asucod, artcod);
         }
 }
