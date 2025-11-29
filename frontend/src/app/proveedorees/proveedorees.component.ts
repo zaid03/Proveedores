@@ -16,53 +16,19 @@ import autoTable from 'jspdf-autotable';
   styleUrls: ['./proveedorees.component.css']
 })
 export class ProveedoreesComponent {
-  proveedores: any[] = [];
-  private backupProveedores: any[] = [];
-  searchTerm: string = '';
-  filterOption: string = 'noBloqueados';
-  page = 0;
-  pageSize = 20;
-  selectedProveedor: any = null;
-  error: string | null = null;
-  showContactPersonsGrid = false;
-  showArticulosGrid = false;
-  contactPersons: any = null;
-  articulos: any = null;
-  message: string = '';
-  showHelloGrid = false;
-  selectedFamilia: string = '';
-  selectedSubfamilia: string = '';
-  selectedArticulo: string = '';
-  anadirDescripcion: string = '';
-  anadirRefProv: string = '';
-  anadirUdsEmbalaje: number | null = null;
-  anadirObservaciones: string = '';
-  anadirAcuerdo: boolean = false;
-  anadirPrecioAcuerdo: number | null = null;
-  messages: string = '';
-  isError: boolean = false;
-  contactMessage: string = '';
-  contactIsError: boolean = false;
-  nocontactmessage: string = '';
-  articulosMessage: string = '';
-  articleIsError: boolean = false;
-  afas: any[] = [];
-  asus: any[] = [];
-  arts: any[] = [];
-  anadirmessage: string = '';
-  anadirIsError: boolean = false;
-  showDeleteConfirm = false;
-  articuloToDelete: any = null;
-  searchType: string = 'familia';
-  searchValue: string = '';
-  searchResults: any[] = [];
-  searchPage: number = 0;
-  searchPageSize: number = 5;
+
+  sidebarOpen = false;
+  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
+  closeSidebar() { this.sidebarOpen = false; }
   private entcod: number | null = null;
 
   constructor(private http: HttpClient, private router: Router) {}
 
+  proveedores: any[] = [];
+  private backupProveedores: any[] = [];
+  error: string | null = null;
   ngOnInit(): void {
+    this.error = '';
     const entidad = sessionStorage.getItem('Entidad');
 
     if (entidad) {
@@ -81,7 +47,7 @@ export class ProveedoreesComponent {
       .subscribe({
         next: (response) => {
           if (response.error) {
-            alert('Error: ' + response.error);
+            this.error = `Error:  ${response.error}`;
           } else {
             this.proveedores = response;
             this.backupProveedores = Array.isArray(response) ? [...response] : [];
@@ -89,11 +55,14 @@ export class ProveedoreesComponent {
           }
         },
         error: (err) => {
-          alert('Server error: ' + (err.message || err.statusText));
+          this.error = 'Server error';
         }
       });
   }
 
+  page = 0;
+  pageSize = 20;
+  selectedProveedor: any = null;
   get filteredProveedores() {
     let filtered = this.proveedores;
     return filtered;
@@ -136,19 +105,23 @@ export class ProveedoreesComponent {
 
   showDetails(proveedor: any) {
     this.selectedProveedor = proveedor;
+    this.error = '';
   }
 
   closeDetails() {
+    this.messageError = '';
+    this.messageSuccess = '';
+    this.personasContactoError = '';
+    this.personasContactoErrorMessage = '';
+    this.personasContactoSuccessMessage = '';
+    this.articuloError = '';
+    this.articuloSuccessMessage = '';
+    this.articuloErrorMessage = '';
     this.selectedProveedor = null;
     this.contactPersons = null;
     this.articulos = null;
-    this.message = '';
     this.showContactPersonsGrid = false;
     this.showArticulosGrid = false;
-    this.contactMessage = '';
-    this.contactIsError = false;
-    this.articulosMessage = '';
-    this.articleIsError = false;
     this.page = 0;
   }
 
@@ -159,14 +132,15 @@ export class ProveedoreesComponent {
 
   clearSearch() {
     this.searchTerm = '';
-    this.error = null;
+    this.error = '';
     this.proveedores = [...this.backupProveedores];
     this.page = 0;
   }
 
+  searchTerm: string = '';
+  filterOption: string = 'noBloqueados';
   search() {
-    console.log('here');
-    this.error = null;
+    this.error = '';
     if (this.searchTerm.trim() === '') {
       this.proveedores = [];
       return;
@@ -185,7 +159,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -203,7 +177,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -221,7 +195,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -239,7 +213,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -256,7 +230,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -273,7 +247,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -292,7 +266,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -310,7 +284,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           }
         });
       return;
@@ -330,7 +304,7 @@ export class ProveedoreesComponent {
               this.page = 0;
             },
             error: (err) => {
-              alert('Server error: ' + (err.message || err.statusText));
+              this.error = 'Server error';
             }
           });
         return;
@@ -347,7 +321,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           } 
         });
         return;
@@ -362,7 +336,7 @@ export class ProveedoreesComponent {
             this.page = 0;
           },
           error: (err) => {
-            alert('Server error: ' + (err.message || err.statusText));
+            this.error = 'Server error';
           } 
         });
         return;
@@ -417,7 +391,7 @@ export class ProveedoreesComponent {
     const data = this.proveedores;
 
     if (!data || data.length === 0) {
-      alert('No hay datos para exportar.');
+      this.error = 'No hay datos para exportar.';
       return;
     }
     const columns = [
@@ -446,51 +420,50 @@ export class ProveedoreesComponent {
     document.body.removeChild(link);
   }
 
+  showContactPersonsGrid = false;
+  contactPersons: any = null;
+  personasContactoError: string = '';
   showContactPersons(proveedore: any){
-    this.selectedProveedor = proveedore;
-    this.contactMessage = ''; 
-    this.articulosMessage = '';
-    const tercod = proveedore.tercod;
+    this.messageError = '';
+    this.messageSuccess = '';
     this.showContactPersonsGrid = true;
     this.showArticulosGrid = false;
+    this.selectedProveedor = proveedore;
+    this.personasContactoError = ''
+    this.articuloError = '';
+    const tercod = proveedore.tercod;
 
     this.http.get<any[]>(`http://localhost:8080/api/more/by-tpe/${this.entcod}/${tercod}`)
       .subscribe({ next: (response) => {
         const respArray = Array.isArray(response) ? response : (response ? [response] : []);
         if (respArray.length === 0) { 
           this.contactPersons = null;           
-          this.nocontactmessage = 'No se encontraron personas de contacto.';
+          this.personasContactoError = 'No se encontraron personas de contacto.';
         } else {
           this.contactPersons = respArray[0];
-          this.nocontactmessage = '';
+          this.personasContactoError = '';
          }
           this.page = 0;
       },
       error: (err) => {
-        console.error('Error fetching contact persons', err);
-        if (err && err.status === 404) {
-          const backendMsg = err.error && (err.error.message || err.error.msg || err.error);
-          this.nocontactmessage = backendMsg ? String(backendMsg) : 'No se encontraron personas de contacto.';
-        } else {
-          this.nocontactmessage = 'Error al obtener las personas de contacto.';
-        }
+        this.personasContactoError = 'No se encontraron personas de contacto.';
         this.contactPersons = [];
         this.page = 0;
       } 
     });
   }
 
+  showArticulosGrid = false;
+  articulos: any = null;
+  articuloError: string = '';
   showArticulos(proveedore: any){
-    this.selectedProveedor = proveedore;
-    sessionStorage.setItem('tercod', proveedore.tercod);
-    const tercod = sessionStorage.getItem('tercod');
+    this.messageSuccess = ''
     this.showArticulosGrid = true;
     this.showContactPersonsGrid = false;
-
-    this.nocontactmessage = '';
-    this.isError = false;
-    this.contactMessage = '';
-    this.contactIsError = false;
+    this.selectedProveedor = proveedore;
+    const tercod = proveedore.tercod;
+    this.articuloError = ''
+    this.personasContactoError = ''
     
     this.http.get<any[]>(`http://localhost:8080/api/more/by-apr/${this.entcod}/${tercod}`)
       .subscribe({ next: (response) => {
@@ -500,52 +473,59 @@ export class ProveedoreesComponent {
           const artcod = String(row?.artcod ?? '').trim();
           const afacod = String(row?.afacod ?? '').trim();
           const asucod = String(row?.asucod?? '').trim();
-          console.log(`row ${index}: artcod="${artcod}", afacod="${afacod}", asucod="${asucod}"`, row);
-
-          if (artcod === '*'){
-            if(asucod === '*') {
-              console.log(`row ${index}: artcod="*" and asucod="*"`, row);
-              this.http.get<any[]>(`http://localhost:8080/api/afa/art-name/${this.entcod}/${afacod}`).subscribe({ next: (response) => {
-                const respArray = Array.isArray(response) ? response : (response ? [response] : []);
-                const afades = respArray[0]?.afades;
-                console.log(afades);
-                row.description = String(afades).trim();
-              }})
-            } else {
-              console.log(`row ${index}: artcod="*" but asucod="${asucod}"`, row);
-              this.http.get<any[]>(`http://localhost:8080/api/asu/art-name/${this.entcod}/${afacod}/${asucod}`).subscribe({ next: (response) => {
-                const respArray = Array.isArray(response) ? response : (response ? [response] : []);
-                const asudes = respArray[0]?.asudes;
-                console.log(asudes);
-                row.description = String(asudes).trim();
-              }})
-            }
-          } else {
-            console.log(`row ${index}: artcod="${artcod}", afacod="${afacod}", asucod="${asucod}"`, row);
-            this.http.get<any>(`http://localhost:8080/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`).subscribe({ next: (response) => {
-              const respArray = Array.isArray(response) ? response : (response ? [response] : []);
-              const afades = respArray[0]?.artdes;
-              console.log(afades);
-              row.description = String(afades).trim();
-            }})
-          }
+          this.getDescription(row, index, artcod, afacod, asucod);
+          this.anadirmessage = '';
         });
 
         if (response.length === 0) {
-          this.nocontactmessage = 'No se encontraron artículos.';
+          this.articuloError = 'No se encontraron artículos.';
         }
         this.page = 0;
       },
       error: (err) => {
-        this.nocontactmessage = 'error al obtener los artículos.';
+        this.articuloError = 'No se encontraron artículos.';
       } 
     });
   }
 
-  sidebarOpen = false;
-  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
-  closeSidebar() { this.sidebarOpen = false; }
-
+  getDescription(row: any, index: number, artcod: string, afacod: string, asucod: string){
+    if (artcod === '*') {
+      if (asucod === '*') {
+        this.http
+          .get<any[]>(`http://localhost:8080/api/afa/art-name/${this.entcod}/${afacod}`)
+          .subscribe({
+            next: (response) => {
+              const respArray = Array.isArray(response) ? response : response ? [response] : [];
+              const afades = respArray[0]?.afades;
+              row.description = String(afades ?? '').trim();
+            },
+          });
+      } else {
+        this.http
+          .get<any[]>(`http://localhost:8080/api/asu/art-name/${this.entcod}/${afacod}/${asucod}`)
+          .subscribe({
+            next: (response) => {
+              const respArray = Array.isArray(response) ? response : response ? [response] : [];
+              const asudes = respArray[0]?.asudes;
+              row.description = String(asudes ?? '').trim();
+            },
+          });
+      }
+    } else {
+      this.http
+        .get<any[]>(`http://localhost:8080/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`)
+        .subscribe({
+          next: (response) => {
+            const respArray = Array.isArray(response) ? response : response ? [response] : [];
+            const artdes = respArray[0]?.artdes;
+            row.description = String(artdes ?? '').trim();
+          },
+        });
+    }
+  }
+  
+  messageSuccess: string = '';
+  messageError: string = '';
   saveChanges() {
     const updateFields ={
       TERWEB : this.selectedProveedor.terweb,
@@ -554,21 +534,16 @@ export class ProveedoreesComponent {
       TERACU : this.selectedProveedor.teracu
     }
 
-    this.http.put(`http://localhost:8080/api/ter/updateFields/${this.selectedProveedor.tercod}`, 
-    updateFields,
-    { responseType: 'text' }
+    this.http.put(`http://localhost:8080/api/ter/updateFields/${this.selectedProveedor.tercod}`, updateFields, { responseType: 'text' }
     ).subscribe({
-        next: (res) => {
-          console.log('Success:', res);
-          this.messages = 'Proveedor actualizado correctamente';
-          this.isError = false;
-        },
-        error: (err) => {
-          console.error('Error:', err);
-          this.messages = 'Error al guardar el proveedor';
-          this.isError = true;
-        }
-      });
+      next: (res) => {
+        this.messageSuccess = 'Proveedor actualizado correctamente';
+      },
+      error: (err) => {
+        console.error('Error:', err);
+        this.messageError = 'Error al guardar el proveedor';
+      }
+    });
   }
 
   onCheckboxGeneric(event: Event, field: string) {
@@ -581,7 +556,12 @@ export class ProveedoreesComponent {
     }
   }
 
+  personasContactoErrorMessage: string = '';
+  personasContactoSuccessMessage: string = '';
   updatepersonas(){
+    this.personasContactoErrorMessage = '';
+    this.personasContactoSuccessMessage = '';
+
     const updateFields = {
       TPENOM : this.contactPersons.tpenom,
       TPETEL : this.contactPersons.tpetel,
@@ -595,14 +575,11 @@ export class ProveedoreesComponent {
       { responseType: 'text' }
     ).subscribe({
       next: (res) => {
-        console.log('Success:', res);
-        this.contactMessage = 'Persona de contacto actualizada correctamente';
-        this.contactIsError = false;
+        this.personasContactoSuccessMessage = 'Persona de contacto actualizada correctamente';
       },
       error: (err) => {
         console.error('Error:', err);
-        this.contactMessage = 'Error al guardar la persona de contacto';
-        this.contactIsError = true;
+        this.personasContactoErrorMessage = 'Error al guardar la persona de contacto';
       }
     });
   }
@@ -612,15 +589,12 @@ export class ProveedoreesComponent {
       `http://localhost:8080/api/more/delete/${this.selectedProveedor.tercod}`,
       { responseType: 'text' }).subscribe({
         next: (res) => {
-        console.log('Success:', res);
-        this.contactMessage = 'Persona de contacto eliminada correctamente';
-        this.contactIsError = false;
+        this.personasContactoSuccessMessage = 'Persona de contacto eliminada correctamente';
         this.contactPersons = null; 
         },
         error: (err) => {
           console.error('Error:', err);
-          this.contactMessage = 'Error al eliminar la persona de contacto';
-          this.contactIsError = true;
+          this.personasContactoErrorMessage = 'Error al eliminar la persona de contacto';
         }
       });
   }
@@ -630,7 +604,12 @@ export class ProveedoreesComponent {
     articulo.apracu = input.checked ? 1 : 0;
   }
 
+  articuloSuccessMessage: string = '';
+  articuloErrorMessage: string = '';
   updatearticulos(articulo: any){
+    this.articuloSuccessMessage = '';
+    this.articuloErrorMessage = '';
+
     const updateFields = {
       ENT: this.entcod,
       TERCOD: this.selectedProveedor.tercod,
@@ -650,14 +629,11 @@ export class ProveedoreesComponent {
       { responseType: 'text' }
     ).subscribe({
       next: (res) => {
-        console.log('Success:', res);
-        this.articulosMessage = 'Artículo actualizado correctamente';
-        this.articleIsError = false;
+        this.articuloSuccessMessage = 'Artículo actualizado correctamente';
       },
       error: (err) => {
         console.error('Error:', err);
-        this.articulosMessage = 'Error al guardar el artículo';
-        this.articleIsError = true;
+        this.articuloErrorMessage = 'Error al guardar el artículo';
       }
     });
   }
@@ -675,9 +651,7 @@ export class ProveedoreesComponent {
       `http://localhost:8080/api/more/delete-apr?${ params}`,
       { responseType: 'text' }).subscribe({
         next: (res) => {
-        console.log('Success:', res);
-        this.articulosMessage = 'Artículo eliminado correctamente';
-        this.articleIsError = false;
+        this.articuloSuccessMessage = 'Artículo eliminado correctamente';
         this.articulos = this.articulos.filter((a: any) =>
         !(a.ent === articulo.ent &&
           a.tercod === articulo.tercod &&
@@ -688,11 +662,18 @@ export class ProveedoreesComponent {
         },
         error: (err) => {
           console.error('Error:', err);
-          this.articulosMessage = 'Error al eliminar el artículo';
-          this.articleIsError = true;
+          this.articuloErrorMessage = 'Error al eliminar el artículo';
         }
       });
   }
+
+  showHelloGrid = false;
+  selectedFamilia: string = '';
+  selectedSubfamilia: string = '';
+  selectedArticulo: string = '';
+  afas: any[] = [];
+  asus: any[] = [];
+  arts: any[] = [];
 
   showHello() {
     this.searchValue = '';
@@ -719,12 +700,12 @@ export class ProveedoreesComponent {
     this.selectedSubfamilia = '';
     this.selectedArticulo = '';
     this.anadirmessage = '';
-    this.anadirIsError = false;
     this.afas = [];
     this.asus = [];
     this.arts = [];
   }
 
+  anadirmessage: string = '';
   addArticulo(){
     const newArticulo = {
       ENT: this.entcod,
@@ -740,29 +721,39 @@ export class ProveedoreesComponent {
       { responseType: 'text' }
     ).subscribe({
       next: (res) => {
-        console.log('Success:', res);
         this.anadirmessage = 'Artículo añadido correctamente';
-        this.anadirIsError = false;
 
         if (this.showArticulosGrid) {
-          if (!this.articulos) {
-            this.articulos = [];
-          }
-          this.articulos.push({
-            afacod: this.selectedFamilia,
-            asucod: this.selectedSubfamilia,
-            artcod: this.selectedArticulo,
-          });
+          const newRow = {
+            afacod: this.selectedFamilia || '*',
+            asucod: this.selectedSubfamilia || '*',
+            artcod: this.selectedArticulo || '*',
+            ent: this.entcod,
+            tercod: this.selectedProveedor.tercod,
+            description: ''
+          };
+          if (!this.articulos) this.articulos = [];
+          this.articulos.push(newRow);
+
+          const artcod = String(newRow.artcod ?? '').trim();
+          const afacod = String(newRow.afacod ?? '').trim();
+          const asucod = String(newRow.asucod ?? '').trim();
+          const index = this.articulos.length - 1;
+
+          this.getDescription(newRow, index, artcod, afacod, asucod);
+          this.articuloSuccessMessage = '';
+          this.articuloErrorMessage = '';
         }
       },
       error: (err) => {
         console.error('Error:', err);
         this.anadirmessage = 'Error al añadir el artículo';
-        this.anadirIsError = true;
       }
     });
   }
 
+  showDeleteConfirm = false;
+  articuloToDelete: any = null;
   openDeleteConfirm(articulo: any) {
     this.articuloToDelete = articulo;
     this.showDeleteConfirm = true;
@@ -771,8 +762,8 @@ export class ProveedoreesComponent {
   closeDeleteConfirm() {
     this.showDeleteConfirm = false;
     this.articuloToDelete = null;
-    this.articulosMessage = '';
-    this.articleIsError = false;
+    this.articuloSuccessMessage = '';
+    this.articuloErrorMessage = '';
   }
 
   confirmDelete() {
@@ -782,11 +773,13 @@ export class ProveedoreesComponent {
     }
   }
 
+  searchType: string = 'familia';
+  searchValue: string = '';
+  searchResults: any[] = [];
   onSearch() {
     this.searchPage = 0;
     this.searchResults = [];
     if (!this.searchValue || !this.searchType) return;
-    console.log('Search initiated:', this.searchType, this.searchValue);
     let url = '';
     if (this.searchType === 'familia') {
       if(/^\d+$/.test(this.searchValue)) {
@@ -811,7 +804,6 @@ export class ProveedoreesComponent {
     this.http.get<any[]>(url, { withCredentials: true }).subscribe({
     next: (data) => {
       this.searchResults = data;
-      console.log('Search results:', this.searchResults);
     },error: (err) => {
         console.error('Error fetching search results:', err);
         this.searchResults = [];
@@ -819,6 +811,8 @@ export class ProveedoreesComponent {
     });
   }
 
+  searchPage: number = 0;
+  searchPageSize: number = 5;
   get paginatedSearchResults() {
     const start = this.searchPage * this.searchPageSize;
     return this.searchResults.slice(start, start + this.searchPageSize);
@@ -834,28 +828,28 @@ export class ProveedoreesComponent {
     this.selectedFamilia = item.afacod;
     this.selectedSubfamilia = item.asucod;
     this.selectedArticulo = item.artcod;
-    console.log('Selected search row:', this.selectedSearchRow);
   }
 
   showProveedorModal = false;
-  
+  anadirProveedorErrorMessage: string = '';
   openProveedorModal(): void {
     this.showProveedorModal = true;
+    this.anadirProveedorErrorMessage = '';
     this.resetProveedorModalState();
     this.onProveedorFetch();
   }
 
   closeProveedorModal(): void {
     this.showProveedorModal = false;
+    this.clearMessages();
     this.resetProveedorModalState();
   }
 
   private resetProveedorModalState(): void {
+    this.anadirProveedorErrorMessage = '';
     this.searchProveedor = '';
-    this.anadirMessageProveedor = '';
-    this.anadirProveedorIsError = false;
-    this.contactProveedorIsError = false;
     this.proveedoresSearchPage = 0;
+
     if (this.fullProveedoresSearchResults && this.fullProveedoresSearchResults.length) {
       this.proveedoresSearchResults = [...this.fullProveedoresSearchResults];
     } else {
@@ -863,57 +857,26 @@ export class ProveedoreesComponent {
     }
   }
 
+  searchAdd: string = 'nif';
+  searchProveedor: string = '';
   onProveedorSearchChange(): void {
     const q = (this.searchProveedor || '').toString().trim();
     if (q.length === 0) {
       this.proveedoresSearchResults = [...(this.fullProveedoresSearchResults || [])];
       this.proveedoresSearchPage = 0;
-      this.anadirMessageProveedor = '';
-      this.anadirProveedorIsError = false;
+      this.anadirProveedorErrorMessage = '';
     }
   }
 
-  searchAdd: string = 'nif';
-  searchProveedor: string = '';
-  anadirProveedorIsError = false;
   guardarProveedorIssuccess = false;
-  anadirMessageProveedor = '';
-  guardarMessageProveedor = '';
-  contactProveedorIssuccess = false;
-  contactProveedorIsError = false;
   proveedoresSearchResults: any[] = [];
-  proveedoresSearchPage: number = 0;
-  proveedoresSearchPageSize: number = 10;
   fullProveedoresSearchResults: any[] = [];
   selectedProveediresFromResults: any[] = [];
-
-  get paginatedProveedoresSearchResults() {
-    const start = this.proveedoresSearchPage * this.proveedoresSearchPageSize;
-    return this.proveedoresSearchResults.slice(start, start + this.proveedoresSearchPageSize);
-  }
-
-  get proveedoresSearchTotalPages() {
-    return Math.ceil(this.proveedoresSearchResults.length / this.proveedoresSearchPageSize) || 1;
-  }
-
-  proveedoresSearchPrev() {
-    if (this.proveedoresSearchPage > 0) this.proveedoresSearchPage--;
-  }
-
-  proveedoresSearchNext() {
-    if (this.proveedoresSearchPage + 1 < this.proveedoresSearchTotalPages) this.proveedoresSearchPage++;
-  }
-
   onProveedorFetch(){
     const ent = this.entcod;
-    if (!ent) {
-      alert('Entidad no disponible. Vuelve a iniciar sesión.')
-      return
-    }
 
     this.http.get<any[]>(`http://localhost:8080/api/sical/terceros`, { withCredentials: true}).subscribe({
       next:(data) => {
-        console.log('Search results:', data);
         this.fullProveedoresSearchResults = Array.isArray(data) ? data: [];
         this.proveedoresSearchResults = [...this.fullProveedoresSearchResults];
         const normalized = (Array.isArray(data) ? data : []).map(d => ({
@@ -934,31 +897,25 @@ export class ProveedoreesComponent {
         this.fullProveedoresSearchResults = normalized;
         this.proveedoresSearchResults = [...normalized];
         if (this.proveedoresSearchResults.length === 0) {
-          this.anadirMessageProveedor = 'No se encontraron proveedores.';
-          this.anadirProveedorIsError = false;
+          this.anadirProveedorErrorMessage = 'No se encontraron proveedores.';
         }
       }, error: (e) => {
-        console.log('Error fetching search results:', e);
-        this.anadirProveedorIsError = true;
-        this.anadirMessageProveedor = `${e}`;
+        this.anadirProveedorErrorMessage = `${e}`;
       }
     });
   }
 
   onProveedorSearch(){
     const q = (this.searchProveedor || '').toString().trim();
-
     if (!this.searchAdd) {
-      this.anadirProveedorIsError = true;
-      this.anadirMessageProveedor = 'Selecciona tipo de búsqueda';
+      this.anadirProveedorErrorMessage = 'Selecciona tipo de búsqueda';
       return;
     }
 
     if (q.length === 0) {
       this.proveedoresSearchResults = [...(this.fullProveedoresSearchResults || [])];
       this.proveedoresSearchPage = 0;
-      this.anadirProveedorIsError = false;
-      this.anadirMessageProveedor = '';
+      this.anadirProveedorErrorMessage = '';
       return;
     }
 
@@ -981,10 +938,8 @@ export class ProveedoreesComponent {
 
       this.proveedoresSearchResults = filtered;
       this.proveedoresSearchPage = 0;
-      this.anadirProveedorIsError = false;
-      this.anadirMessageProveedor = filtered.length === 0 ? 'No se encontraron proveedores.' : '';
+      this.anadirProveedorErrorMessage = filtered.length === 0 ? 'No se encontraron proveedores.' : '';
     };
-
     applyFilter();
   }
 
@@ -1002,7 +957,6 @@ export class ProveedoreesComponent {
    }
 
   selectProveedor(item: any){
-    console.log('Selected proveedores (before):', this.selectedProveediresFromResults);
     const k = this.proveedorKey(item);
     const idx = this.selectedProveediresFromResults.findIndex(s => this.proveedorKey(s) === k);
     if (idx === -1) {
@@ -1010,25 +964,19 @@ export class ProveedoreesComponent {
     } else {
       this.selectedProveediresFromResults.splice(idx, 1);
     }
-    console.log('Selected proveedores (after):', this.selectedProveediresFromResults);
   }
 
   clearSelectedProveedores() {
     this.selectedProveediresFromResults = [];
-    console.log('Selected proveedores cleared');
     this.clearMessages();
   }
 
+  guardarMessageProveedor: string = '';
   saveProveedorees() {
-    console.log(this.selectedProveediresFromResults);
     const ent = this.entcod;
-    if (!ent) {
-      alert('Entidad no disponible. Vuelve a iniciar sesión.')
-      return
-    }
 
     if (!this.selectedProveediresFromResults || this.selectedProveediresFromResults.length === 0) {
-      alert('No hay proveedores seleccionados.');
+      this.anadirProveedorErrorMessage = 'No hay proveedores seleccionados';
       return;
     }
 
@@ -1047,14 +995,7 @@ export class ProveedoreesComponent {
       TERPOB: p.TERPOB ?? '',
     }));
 
-    console.log('>>> outgoing payload (first 2000 chars):', JSON.stringify(payload).slice(0,2000));
-
-    // const token = sessionStorage.getItem('JWT');
-    // console.log(token);
-    // const options = token ? { headers: new HttpHeaders({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }) } : { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
-
     const token = sessionStorage.getItem('JWT');
-    console.log(token);
     const headers = token
       ? new HttpHeaders({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' })
       : new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -1064,21 +1005,24 @@ export class ProveedoreesComponent {
     this.http.post<any[]>(`http://localhost:8080/api/ter/save-proveedores/${ent}`, payload, { headers, observe: 'response', responseType: 'text' as 'json' })
       .subscribe({
         next: (res) => {
-          console.log('saved proveedores:', res);
           this.isSaving = false;
           const savedCount = Array.isArray(res.body) ? res.body.length : this.selectedProveediresFromResults.length;
           this.clearSelectedProveedores();
           this.guardarProveedorIssuccess = true;
           this.guardarMessageProveedor = `Proveedores guardados correctamente (${savedCount}).`;
-          this.showMessage(this.guardarMessageProveedor, false, 4000);
         },
         error: (err) => {
           console.error('HTTP error status=', err.status, 'body=', err.error);
         this.isSaving = false;
         const msg = err && err.error ? (typeof err.error === 'string' ? err.error : JSON.stringify(err.error)) : `Error al salvar los proveedores (status ${err.status})`;
-        this.showMessage(msg, true, 8000);
         }
       })
+  }
+
+  clearMessages(){
+    this.anadirProveedorErrorMessage = '';
+    this.guardarMessageProveedor = '';
+    this.anadirProveedorErrorMessage = '';
   }
 
   isSaving = false;
@@ -1086,35 +1030,41 @@ export class ProveedoreesComponent {
   saveSuccess = '';
   private messageTimeout: any = null;
 
-  private showMessage(message: string, isError = false, timeoutMs = 5000) {
-    this.clearMessages();
-    if (isError) this.saveError = message; else this.saveSuccess = message;
-    this.messageTimeout = window.setTimeout(() => this.clearMessages(), timeoutMs);
-  }
-
-  private clearMessages() {
-    this.saveError = '';
-    this.saveSuccess = '';
-    if (this.messageTimeout) {
-      clearTimeout(this.messageTimeout);
-      this.messageTimeout = null;
-    }
-  }
 
   confirmDeleteSelected() {
     if (!this.selectedProveediresFromResults || this.selectedProveediresFromResults.length === 0) {
-      this.showMessage('No hay elementos seleccionados para eliminar.', true);
+      this.saveError = 'No hay elementos seleccionados para eliminar.';
       return;
     }
     const ok = confirm(`Eliminar ${this.selectedProveediresFromResults.length} proveedor(es) de la lista local? Esta acción solo afecta la lista local.`);
     if (ok) this.deleteSelectedFromResults();
   }
+
   deleteSelectedFromResults() {
     const toRemove = new Set(this.selectedProveediresFromResults.map((s: any) => `${s.ENT}|${s.TERNOM}|${s.TERNIF}`));
     this.proveedoresSearchResults = this.proveedoresSearchResults.filter((p: any) => !toRemove.has(`${p.ENT}|${p.TERNOM}|${p.NIF || p.TERNIF}`));
     this.fullProveedoresSearchResults = this.fullProveedoresSearchResults.filter((p: any) => !toRemove.has(`${p.ENT}|${p.TERNOM}|${p.NIF || p.TERNIF}`));
     this.clearSelectedProveedores();
-    this.showMessage('Elementos eliminados de la lista local.', false, 3000);
+    this.saveSuccess = 'Elementos eliminados de la lista local';
+  }
+
+  proveedoresSearchPage: number = 0;
+  proveedoresSearchPageSize: number = 10;
+  get paginatedProveedoresSearchResults() {
+    const start = this.proveedoresSearchPage * this.proveedoresSearchPageSize;
+    return this.proveedoresSearchResults.slice(start, start + this.proveedoresSearchPageSize);
+  }
+
+  get proveedoresSearchTotalPages() {
+    return Math.ceil(this.proveedoresSearchResults.length / this.proveedoresSearchPageSize) || 1;
+  }
+
+  proveedoresSearchPrev() {
+    if (this.proveedoresSearchPage > 0) this.proveedoresSearchPage--;
+  }
+
+  proveedoresSearchNext() {
+    if (this.proveedoresSearchPage + 1 < this.proveedoresSearchTotalPages) this.proveedoresSearchPage++;
   }
 //still need to add a check for the proveedor if it exists in db then dont add it
 }

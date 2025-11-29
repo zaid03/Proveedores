@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit {
   entcod: number | null = null;
   cgecod: number | null = null;
   allowedMnucods: string[] = [];
+  esContable: boolean = false;
 
   logoPath = 'assets/images/logo_iass.png';
 
@@ -31,15 +32,16 @@ export class DashboardComponent implements OnInit {
     const rawEntidad = sessionStorage.getItem('Entidad');
     const rawPerfil  = sessionStorage.getItem('Perfil');
     const rawMnus    = sessionStorage.getItem('mnucods');
+    const rawContable = sessionStorage.getItem('EsContable');
 
     const entidadObj = safeParse(rawEntidad);
     const perfilObj  = safeParse(rawPerfil);
-    const cgObj      = safeParse(sessionStorage.getItem('selected_centro_gestor'));
+    const ContableOBJ = safeParse(rawContable);
 
     this.usucod = sessionStorage.getItem('USUCOD');
     this.entcod = entidadObj.ENTCOD ?? null;
     this.perfil = perfilObj.PERCOD ?? null;
-    this.cgecod = cgObj?.cgecod ?? null;
+    this.esContable = ContableOBJ.value === true || ContableOBJ.value === 'true';
 
     if (!this.usucod || this.entcod == null || !this.perfil) {
       alert('Missing session data. reiniciar el flujo.');
@@ -66,13 +68,6 @@ export class DashboardComponent implements OnInit {
     return !this.allowedMnucods.includes(code);
   }
 
-  navigateTo(code: string): void {
-    if (this.isDisabled(code)) {
-      console.warn('Not allowed:', code);
-      return;
-    }
-  }
-
   logout(): void {
     sessionStorage.clear();
     window.location.href = `${environment.casLoginUrl.replace('/login', '/logout')}?service=${environment.frontendUrl}/login`;
@@ -80,9 +75,46 @@ export class DashboardComponent implements OnInit {
 
   proveedorees(): void {
     if (this.isDisabled('acTer')) {
-      console.warn('Not allowed: acTer');
+      console.warn('Not allowed');
       return;
     }
     this.router.navigate(['/proveedorees']);
+  }
+
+  isFacturasDisabled(): boolean {
+    return this.isDisabled('acFac') || !this.esContable;
+  }
+  facturas(): void{
+    if (this.isFacturasDisabled()) {
+      console.warn('Not allowed');
+      return;
+    }
+    this.router.navigate(['/facturas']);
+  }
+
+  navigateTo(code: string): void {
+    if (this.isDisabled(code)) {
+      console.warn('Not allowed:', code);
+      return;
+    }
+
+    switch (code) {
+      case 'acTer':
+        this.router.navigate(['/proveedorees']);
+        break;
+      case 'acFac':
+        if (this.esContable) {
+          this.router.navigate(['/facturas']);
+          break;
+        } else {
+          console.warn("not allowed");
+        }
+        break
+      case 'acGBS':
+        this.router.navigate(['credito']);
+        break;
+      default:
+        console.warn('No route configured for code:', code);
+    }
   }
 }
