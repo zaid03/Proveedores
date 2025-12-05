@@ -1001,7 +1001,7 @@ export class ProveedoreesComponent {
       this.anadirProveedorErrorMessage = 'Todos los proveedores seleccionados ya existen en la lista.';
       return;
     }
-    
+
     const payload = this.selectedProveediresFromResults.map(p => ({
       ENT: ent,
       TERNOM: p.TERNOM ?? '',
