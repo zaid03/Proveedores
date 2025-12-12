@@ -1,13 +1,25 @@
     
 <div class="proveedores-page">
-  <div 
-    class="sidebar-backdrop" 
-    *ngIf="!sidebar.collapsed" 
-    (click)="sidebar.collapsed = true">
-  </div>
-  <app-sidebar #sidebar></app-sidebar>
+    <div 
+        class="sidebar-backdrop" 
+        *ngIf="!sidebar.collapsed" 
+        (click)="sidebar.collapsed = true">
+    </div>
+    <app-sidebar #sidebar></app-sidebar>
     <div class="proveedores-container" [class.blurred]="!sidebar.collapsed">
-        <h2>Lista de Proveedores</h2>  
+        <div class="title-menu">
+            <h2 class="margin-title">Lista de Proveedores</h2>  
+            <div class="group-menu" (click)="toggleMenu($event)">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="menu-panel" *ngIf="showMenu">
+                    <button type="button" (click)="DownloadPDF(); closeMenu()">Descargar PDF</button>
+                    <button type="button" (click)="DownloadCSV(); closeMenu()">Descargar CSV</button>
+                    <button type="button" (click)="openProveedorModal(); closeMenu()">Añadir proveedor</button>
+                </div>
+            </div>
+        </div>
         <div class="proveedores-search">
             <form class="search-form" (submit)="onSearchFormSubmit($event)">
                 <input type="text" class="search-bar" placeholder="Buscar proveedor" name="search" [(ngModel)]="searchTerm" (keyup.enter)="search()"/>
@@ -19,17 +31,12 @@
                     </label>
                 </div>
                 <button type="button" class="search-button-proveedores" (click)="search()">Buscar</button>
-                <button type="button" class="search-button-proveedores" (click)="clearSearch()">Volver</button>
+                <button type="button" class="search-button-proveedores" (click)="clearSearch()">Limpiar</button>
             </form>
         </div> 
 
-        <div class="proveedores-download">
-            <button class="download-btn" (click)="DownloadPDF()">Descargar como PDF</button>
-            <button class="download-btn" (click)="DownloadCSV()">Descargar como CSV</button>
-        </div>
-
         <div class="proveedores-list">
-            <h1 class="error-message-style">{{error}}</h1>
+            <h1 class="errorBtn">{{error}}</h1>
             <table class="main-table">
                 <thead>
                     <tr>
@@ -80,51 +87,54 @@
                 <span>de {{ totalPages }}</span>
                 <button class="pag-btn" (click)="nextPage()" [disabled]="page + 1 >= totalPages">Siguiente</button>
             </div>
-            <div class="add-container">
-                <button  class="add-btn" (click)="openProveedorModal()">Añadir</button>
-            </div>
             <div class="modal-backdrop" *ngIf="selectedProveedor" (click)="closeDetails()"></div>
             <div class="display" >
                 <div class="modal" *ngIf="selectedProveedor">
                     <button class="close-btn-btn" (click)="closeDetails()">×</button>
                     <h3>Detalles del Proveedor</h3>
-                    <div class="modal-row">
-                        <div class="modal-col">
-                            <strong>Código:</strong>
-                            <h1>{{ selectedProveedor.tercod }}</h1>
+                    <div class="first-row">
+                        <div class="first-data">
+                            <p>Nombre</p>
+                            <textarea [(ngModel)]="selectedProveedor.ternom"></textarea>
                         </div>
-                        <div>
-                            <strong>Nombre:</strong>
-                            <h1>{{ selectedProveedor.ternom }}</h1>
-                        </div>
-                    </div>
-                    <div class="modal-row">
-                        <div>
-                            <strong>Alias:</strong>
-                            <h1>{{ selectedProveedor.terali }}</h1>
-                        </div>
-                        <div>
-                            <strong>NIF:</strong>
-                           <h1>{{ selectedProveedor.ternif }}</h1>
+                        <div class="first-data">
+                            <p>Código</p>
+                            <textarea [(ngModel)]="selectedProveedor.tercod"></textarea>
                         </div>
                     </div>
-                    <div class="modal-row">
-                        <div>
-                            <strong>Dirección:</strong>
-                            <h1>{{ selectedProveedor.terdom }}</h1>
-                        </div>
-                        <div>
-                            <strong>Código contable:</strong>
-                            <h1>{{ selectedProveedor.terayt }}</h1>
+                    <div class="second-row">
+                        <div class="second-data">
+                            <p>Alias</p>
+                            <textarea [(ngModel)]="selectedProveedor.terali"></textarea>
                         </div>
                     </div>
-                    <div class="modal-row">
-                        <div>
-                            <strong>Código Postal:</strong>
-                            <h1>{{ selectedProveedor.tercpo }}</h1>          
-                                <strong>Provincia:</strong>
-                                <h1>{{ selectedProveedor.procod }}</h1>
-                                <h1>{{ selectedProveedor.terpob }}</h1>              
+                    <div class="third-row">
+                        <div class="third-data">
+                            <p>Dirección</p>
+                            <textarea [(ngModel)]="selectedProveedor.terdom"></textarea>
+                        </div>
+                        <div class="third-data">
+                            <p>NIF</p>
+                            <textarea [(ngModel)]="selectedProveedor.ternif"></textarea>
+                        </div>
+                    </div>
+                    <div class="fourth-row">
+                        <div class="fourth-data">
+                            <p>C.P</p>
+                            <textarea [(ngModel)]="selectedProveedor.tercpo"></textarea>
+                        </div>
+                        <div class="fourth-data">
+                            <p>Provincia</p>
+                            <textarea [(ngModel)]="selectedProveedor.procod"></textarea>
+                            <textarea [(ngModel)]="selectedProveedor.terpob"></textarea>
+                        </div>
+                    </div>
+                    <div class="fifth-row">
+                        <div class="fifth-data">
+                            <p>C.contable</p>
+                            <textarea [(ngModel)]="selectedProveedor.terayt"></textarea>
+                        </div>
+                        <div class="fifth-data">
                             <label style="display: flex; align-items: center; gap: 2px;">
                                 <input type="checkbox"
                                 [checked]="selectedProveedor.terblo == 1"
@@ -134,39 +144,50 @@
                             </label>
                         </div>
                     </div>
-                    <div class="modal-row">
-                        <div>
-                            <strong>Teléfono:</strong>
-                            <h1>{{ selectedProveedor.tertel }}</h1>
+                    <div class="special-grid">
+                        <div class="left">
+                            <div class="sixth-row">
+                                <div class="sixth-data">
+                                    <p>Teléfono</p>
+                                    <textarea [(ngModel)]="selectedProveedor.tertel"></textarea>
+                                </div>
+                                <div class="sixth-data">
+                                    <p>Fax</p>
+                                    <textarea [(ngModel)]="selectedProveedor.terfax"></textarea>
+                                </div>
+                            </div>
+                            <div class="seventh-row">
+                                <div class="seventh-data">
+                                    <p>Web</p>
+                                    <textarea [(ngModel)]="selectedProveedor.terweb"></textarea>
+                                </div>
+                            </div>
+                            <div class="eighth-row">
+                                <div class="eighth-data">
+                                    <p>Correo electrónico</p>
+                                    <textarea [(ngModel)]="selectedProveedor.tercoe"></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <strong>Fax:</strong>
-                            <h1>{{ selectedProveedor.terfax }}</h1>
-                        </div>
-                        <div>
-                            <strong>Web:</strong>
-                            <input [(ngModel)]="selectedProveedor.terweb" type="text" />
+                        <div class="right">
+                            <div class="tenth-row">
+                                <div class="tenth-data">
+                                    <p>Observaciones:</p>
+                                    <textarea [(ngModel)]="selectedProveedor.terobs"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-row">
-                        <div class="textArea">
-                            <strong>Correo electrónico:</strong>
-                            <h1 class="correo">{{ selectedProveedor.tercoe }}</h1>
-                            <strong>Observaciones:</strong>
-                            <textarea [(ngModel)]="selectedProveedor.terobs"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-row">
-                        <div>
-                            <input type="checkbox"
+                    <div class="ninth-row">
+                        <input type="checkbox"
                             [checked]="selectedProveedor.teracu == 1"
                             (change)="onCheckboxGeneric($event, 'teracu')"
-                            class="checkbox" />
-                             Tiene acuerdo marco
-                        </div>
+                            class="checkbox" 
+                        />
+                            Tiene acuerdo marco
                     </div>
-                    <h1 class="error-message-style">{{ messageError }}</h1>
-                    <h1 class="success-message-style">{{ messageSuccess }}</h1>
+                    <h1 class="errorBtn">{{ messageError }}</h1>
+                    <h1 class="successBtn">{{ messageSuccess }}</h1>
                     <button class="guardar-btn" (click)="saveChanges()">Guardar</button>
                     <div class="more">
                         <button class="pers-btn" (click)="showContactPersons(selectedProveedor)">Personas de Contacto</button>
@@ -174,7 +195,7 @@
                     </div>
                     <div class="custom-grid-modal" *ngIf="showContactPersonsGrid">
                         <h3>Personas de Contacto</h3>
-                        <h1 class="error-message-style">{{ personasContactoError }}</h1>
+                        <h1 class="errorBtn">{{ personasContactoError }}</h1>
                         <table class="personas-contacto-table">
                             <thead>
                                 <tr>
@@ -209,13 +230,13 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <h1 class="error-message-style">{{ personasContactoErrorMessage }}</h1>
-                        <h1 class="success-message-style">{{ personasContactoSuccessMessage }}</h1>
+                        <h1 class="errorBtn">{{ personasContactoErrorMessage }}</h1>
+                        <h1 class="successBtn">{{ personasContactoSuccessMessage }}</h1>
                         <button class="guardar-btn" (click)="updatepersonas()">Guardar</button>
                     </div>
                     <div class="custom-grid-modal" *ngIf="showArticulosGrid">
                         <h3>Artículos</h3>
-                        <h1 class="error-message-style">{{ articuloError }}</h1>
+                        <h1 class="errorBtn">{{ articuloError }}</h1>
                         <table class="articulo-table">
                             <thead>
                                 <tr>
@@ -271,8 +292,8 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <h1 class="error-message-style">{{ articuloErrorMessage }}</h1>
-                        <h1 class="success-message-style">{{ articuloSuccessMessage }}</h1>
+                        <h1 class="errorBtn">{{ articuloErrorMessage }}</h1>
+                        <h1 class="successBtn">{{ articuloSuccessMessage }}</h1>
                         <button class="add-btn" (click)="showHello()">Añadir</button>
                     </div>
                 </div>
@@ -336,8 +357,8 @@
             <span> {{ searchPage + 1 }} de {{ searchTotalPages }}</span>
             <button class="pag-btn" (click)="searchPage = searchPage + 1" [disabled]="searchPage + 1 >= searchTotalPages">Siguiente</button>
         </div>
-        <h1 class="success-message-style">{{ anadirmessage }}</h1>
-        <h1 class="error-message-style">{{ anadirErrorMessage }}</h1>
+        <h1 class="successBtn">{{ anadirmessage }}</h1>
+        <h1 class="errorBtn">{{ anadirErrorMessage }}</h1>
     </form>
 </div>
 
@@ -416,14 +437,14 @@
                 </tr>
             </tbody>
         </table>
-        <h1 class="error-message-style">{{ anadirProveedorErrorMessage }}</h1>
+        <h1 class="errorBtn">{{ anadirProveedorErrorMessage }}</h1>
         <div class="pagination-controls" *ngIf="proveedoresSearchResults.length > proveedoresSearchPageSize">
             <button class="pag-btn" (click)="proveedoresSearchPrev()" [disabled]="proveedoresSearchPage === 0">Anterior</button>
             <span> {{ proveedoresSearchPage + 1 }} de {{ proveedoresSearchTotalPages }}</span>
             <button class="pag-btn" (click)="proveedoresSearchNext()" [disabled]="proveedoresSearchPage + 1 >= proveedoresSearchTotalPages">Siguiente</button>
         </div>
     </div>
-    <h1 class="success-message-style">{{ guardarMessageProveedor }}</h1>
+    <h1 class="successBtn">{{ guardarMessageProveedor }}</h1>
     <div class="modal-actions">
         <div class="selection-summary" style="display:flex;gap:8px;align-items:center;">
             <span>Seleccionados: {{ selectedProveediresFromResults.length }}</span>
