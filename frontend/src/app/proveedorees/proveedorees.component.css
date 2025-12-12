@@ -143,6 +143,15 @@ app-sidebar {
   font-weight: 700;
 }
 
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.sort-indicator {
+  margin-left: 4px;
+  font-size: 0.75rem;
+}
+
 .main-table td,
 .personas-contacto-table td,
 .articulo-table td,
@@ -155,6 +164,10 @@ app-sidebar {
   font-size: 15px;
   color: #222;
   font-weight: 600;
+}
+
+.main-table td:first-child {
+  width: 64px;
 }
 
 .main-table tr:hover,
