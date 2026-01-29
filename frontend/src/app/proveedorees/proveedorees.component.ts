@@ -17,9 +17,6 @@ import { environment } from '../../environments/environment';
   styleUrls: ['./proveedorees.component.css']
 })
 export class ProveedoreesComponent {
-  sidebarOpen = false;
-  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
-  closeSidebar() { this.sidebarOpen = false; }
   private entcod: number | null = null;
 
   showMenu = false;
@@ -38,11 +35,11 @@ export class ProveedoreesComponent {
   proveedores: any[] = [];
   private backupProveedores: any[] = [];
   error: string | null = null;
-  sortField: 'tercod' | 'ternom' | null = null;
-  sortDirection: 'asc' | 'desc' = 'asc';
-  private defaultProveedores: any[] = [];
+  isLoading: boolean = false;
   ngOnInit(): void {
+    this.limpiarMessages();
     this.error = '';
+    this.isLoading = true;
     const entidad = sessionStorage.getItem('Entidad');
 
     if (entidad) {
@@ -52,7 +49,7 @@ export class ProveedoreesComponent {
 
     if (!entidad || this.entcod === null) {
       sessionStorage.clear();
-      alert('You must be logged in to access this page.');
+      alert('Debes iniciar sesión para acceder a esta página.');
       this.router.navigate(['/login']);
       return;
     }
@@ -68,48 +65,51 @@ export class ProveedoreesComponent {
             this.defaultProveedores = [...this.backupProveedores];
             this.page = 0;
             this.updatePaginatedProveedores();
+            this.isLoading = false;
           }
         },
         error: (err) => {
-          this.error = 'Server error';
+          this.error = err.error || err.error.error;
+          this.isLoading = false;
         }
       });
   }
 
-  toggleSort(field: 'tercod' | 'ternom'): void {
-    if (this.sortField !== field) {
-      this.sortField = field;
-      this.sortDirection = 'asc';
-    } else if (this.sortDirection === 'asc') {
-      this.sortDirection = 'desc';
+  //sorting main table related function
+  sortField: 'tercod' | 'ternom' | 'ternif' | 'terali' | 'tertel' | 'terdom' | 'tercpo' | 'terpob' | 'terayt' | 'terfax' | 'terweb' | 'tercoe' | 'terobs' | null = null;
+  sortColumn: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+  private defaultProveedores: any[] = [];
+    toggleSort(column: string) {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
-      this.sortField = null;
+      this.sortColumn = column;
       this.sortDirection = 'asc';
-      this.proveedores = [...this.defaultProveedores];
-      this.page = 0;
-      this.updatePaginatedProveedores();
-      return;
     }
     this.applySort();
+    this.page = 0;
+    this.updatePaginatedProveedores();
   }
 
   private applySort(): void {
-    const sorted = [...this.proveedores].sort((a, b) => {
-      if (this.sortField === 'tercod') {
-        const aNum = Number(a.tercod ?? 0);
-        const bNum = Number(b.tercod ?? 0);
+    if (!this.sortColumn) return;
+    this.proveedores.sort((a, b) => {
+      let aValue = a[this.sortColumn];
+      let bValue = b[this.sortColumn];
+
+      const aNum = Number(aValue);
+      const bNum = Number(bValue);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
         return this.sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
       }
-      const aName = (a.ternom ?? '').toString().toUpperCase();
-      const bName = (b.ternom ?? '').toString().toUpperCase();
-      return this.sortDirection === 'asc'
-        ? aName.localeCompare(bName)
-        : bName.localeCompare(aName);
-    });
 
-    this.proveedores = sorted;
-    this.page = 0;
-    this.updatePaginatedProveedores();
+      aValue = (aValue ?? '').toString().toUpperCase();
+      bValue = (bValue ?? '').toString().toUpperCase();
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 
   private updatePaginatedProveedores(): void {
@@ -167,19 +167,14 @@ export class ProveedoreesComponent {
   }
 
   showDetails(proveedor: any) {
+    this.limpiarMessages();
     this.selectedProveedor = proveedor;
     this.error = '';
   }
 
   closeDetails() {
-    this.messageError = '';
-    this.messageSuccess = '';
-    this.personasContactoError = '';
-    this.personasContactoErrorMessage = '';
-    this.personasContactoSuccessMessage = '';
-    this.articuloError = '';
-    this.articuloSuccessMessage = '';
-    this.articuloErrorMessage = '';
+    this.limpiarMessages();
+    this.activeDetailTab = null;
     this.selectedProveedor = null;
     this.contactPersons = null;
     this.articulos = null;
@@ -193,20 +188,38 @@ export class ProveedoreesComponent {
     this.search();
   }
 
-  clearSearch() {
-    this.searchTerm = '';
-    this.error = '';
-    this.proveedores = [...this.backupProveedores];
-    this.page = 0;
-  }
-
+  //proveedores main related functions
   searchTerm: string = '';
   filterOption: string = 'noBloqueados';
   search() {
-    this.error = '';
+    this.limpiarMessages();
+    this.isLoading = true
     if (this.searchTerm.trim() === '') {
-      this.proveedores = [];
-      return;
+      if (this.filterOption === 'Bloqueados') {
+        this.http.get<any[]>(`${environment.backendUrl}/api/ter/filter/${this.entcod}`).subscribe({
+          next: (response) => {
+            this.proveedores = response;
+            this.page = 0;
+            this.isLoading = false;
+          },
+          error: (err) => {
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
+          }
+        })
+      } else if (this.filterOption === 'noBloqueados') {
+        this.http.get<any[]>(`${environment.backendUrl}/api/ter/filter-no/${this.entcod}`).subscribe({
+          next: (response) => {
+            this.proveedores = response;
+            this.page = 0;
+            this.isLoading = false;
+          },
+          error: (err) => {
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
+          }
+        })
+      }
     }
 
     if(/^\d+$/.test(this.searchTerm)) {
@@ -215,26 +228,24 @@ export class ProveedoreesComponent {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-tercod-no-bloqueado/${this.entcod}/tercod/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores no bloqueados con el código ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         } else if ((this.searchTerm.length > 5)) {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ternif-no-bloqueado/${this.entcod}/ternif/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores no bloqueados con el Nif ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         }
@@ -243,26 +254,24 @@ export class ProveedoreesComponent {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-tercod-bloqueado/${this.entcod}/tercod/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores bloqueados con el codigo ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         } if ((this.searchTerm.length > 5)) {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ternif-bloquado/${this.entcod}/ternif/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores bloqueados con el NIF ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         }
@@ -271,26 +280,24 @@ export class ProveedoreesComponent {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ent/${this.entcod}/tercod/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores con el codigo ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         } else if ((this.searchTerm.length > 5)) {
           this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ent/${this.entcod}/ternif/${this.searchTerm}`).subscribe({
             next: (response) => {
               this.proveedores = response;
-              if (response.length === 0) {
-                this.error = 'No se encontraron proveedores con el NIF ingresado.';
-              }
               this.page = 0;
+              this.isLoading = false;
             },
             error: (err) => {
-              this.error = 'Server error';
+              this.error = err.error || err.error.error;
+              this.isLoading = false;
             }
           })
         }
@@ -300,39 +307,36 @@ export class ProveedoreesComponent {
         this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-nif-nom-ali-no-bloquado/${this.entcod}/search-by-term?term=${this.searchTerm}`).subscribe({
           next: (response) => {
             this.proveedores = response;
-            if (response.length === 0) {
-              this.error = 'No se encontraron proveedores no bloqueados con el valor ingresado.';
-            }
             this.page = 0;
+            this.isLoading = false;
           },
           error: (err) => {
-            this.error = 'Server error';
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
           }
         })
       } if(this.filterOption === 'Bloqueados') {
         this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ternif-nom-ali-bloquado/${this.entcod}/search?term=${this.searchTerm}`).subscribe({
           next: (response) => {
             this.proveedores = response;
-            if (response.length === 0) {
-              this.error = 'No se encontraron proveedores no bloqueados con el valor ingresado.';
-            }
             this.page = 0;
+            this.isLoading = false;
           },
           error: (err) => {
-            this.error = 'Server error';
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
           }
         })
       } if(this.filterOption === 'Todos') {
         this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-ent/${this.entcod}/search-todos?term=${this.searchTerm}`).subscribe({
           next: (response) => {
             this.proveedores = response;
-            if (response.length === 0) {
-              this.error = 'No se encontraron proveedores bloqueados con el valor ingresado.';
-            }
             this.page = 0;
+            this.isLoading = false;
           },
           error: (err) => {
-            this.error = 'Server error';
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
           }
         })
       }
@@ -341,13 +345,12 @@ export class ProveedoreesComponent {
         this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-nom-ali-no-bloquado/${this.entcod}/findMatchingNomOrAli?term=${this.searchTerm}`).subscribe({
           next: (response) => {
             this.proveedores = response;
-            if (response.length === 0) {
-              this.error = 'No se encontraron proveedores no bloqueados con el valor ingresado.';
-            }
             this.page = 0;
+            this.isLoading = false;
           },
           error: (err) => {
-            this.error = 'Server error';
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
           }
         })
       }
@@ -355,53 +358,69 @@ export class ProveedoreesComponent {
         this.http.get<any[]>(`${environment.backendUrl}/api/ter/by-nom-ali-bloquado/${this.entcod}/searchByNomOrAli?term=${this.searchTerm}`).subscribe({
           next: (response) => {
             this.proveedores = response;
-            if (response.length === 0) {
-              this.error = 'No se encontraron proveedores bloqueados con el valor ingresado.';
-            }
             this.page = 0;
+            this.isLoading = false;
           },
           error: (err) => {
-            this.error = 'Server error';
+            this.error = err.error || err.error.error;
+            this.isLoading = false;
           }
         })
       }
     }
   }
+
+  clearSearch() {
+    this.limpiarMessages();
+    this.proveedores = [...this.backupProveedores];
+    this.page = 0;
+  }
   
   DownloadPDF() {
+    this.limpiarMessages();
     const doc = new jsPDF({orientation: 'landscape', unit: 'mm', format: 'a4'});
     const columns = [
       { header: 'Código', dataKey: 'tercod' },
       { header: 'Nombre', dataKey: 'ternom' },
-      { header: 'Alias', dataKey: 'terali' },
       { header: 'NIF', dataKey: 'ternif' },
+      { header: 'Alias', dataKey: 'terali' },
+      { header: 'Teléfono', dataKey: 'tertel' },
       { header: 'Domicilio', dataKey: 'terdom' },
       { header: 'Código Postal', dataKey: 'tercpo' },
       { header: 'Municipio', dataKey: 'terpob' },
-      { header: 'Teléfono', dataKey: 'tertel' },
-      { header: 'Correo electrónico', dataKey: 'tercoe' },
-      { header: 'Código contable', dataKey: 'terayt' }
+      { header: 'Código contable', dataKey: 'terayt' },
+      { header: 'Fax', dataKey: 'terfax' },
+      { header: 'Web', dataKey: 'terweb' },
+      { header: 'Correo electronico', dataKey: 'tercoe' },
+      { header: 'Observaciones', dataKey: 'terobs' }
     ];
     const data = this.proveedores;
 
     autoTable(doc, {
       columns,
       body: data,
-      styles: { fontSize: 6 },
-      headStyles: { fillColor: [41, 128, 185] },
-      margin: { left: 2, right: 2 },
+      styles: { fontSize: 8 },
       tableWidth: 'wrap',
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [33, 53, 71],
+        fontStyle: 'bold',
+        halign: 'left'
+      },
       columnStyles: {
-        tercod: { cellWidth: 15 },         
-        ternom: { cellWidth: 45 },  
-        terali: { cellWidth: 45 },         
-        ternif: { cellWidth: 22 },          
-        terdom: { cellWidth: 35 },          
-        tercpo: { cellWidth: 15 },        
-        terpob: { cellWidth: 35 },          
-        tertel: { cellWidth: 22 },          
-        tercoe: { cellWidth: 35 },       
-        terayt: { cellWidth: 18 }
+        tercod: { cellWidth: 12 },         
+        ternom: { cellWidth: 25 },  
+        ternif: { cellWidth: 18 },         
+        terali: { cellWidth: 25 },          
+        tertel: { cellWidth: 18 },          
+        terdom: { cellWidth: 25 },        
+        tercpo: { cellWidth: 18 },          
+        terpob: { cellWidth: 25 },          
+        terayt: { cellWidth: 18 },       
+        terfax: { cellWidth: 18 },
+        terweb: { cellWidth: 20 },
+        tercoe: { cellWidth: 25 },
+        terobs: { cellWidth: 25 }
       },
       didDrawPage: (dataArg) => {
         doc.setFontSize(10);
@@ -413,161 +432,88 @@ export class ProveedoreesComponent {
   }
 
   DownloadCSV() {
-    const data = this.proveedores;
+    this.limpiarMessages();
 
-    if (!data || data.length === 0) {
+    const source = this.backupProveedores.length ? this.backupProveedores : this.proveedores;
+    if (!source?.length) {
       this.error = 'No hay datos para exportar.';
       return;
     }
+
+    const rows = source.map((row: any, index: number) => ({
+      index: index + 1,
+      tercod: row.tercod ?? '',
+      ternom: row.ternom ?? '',
+      ternif: row.ternif ?? '',
+      terali: row.terali ?? '',
+      tertel: row.tertel ?? '',
+      terdom: row.terdom ?? '',
+      tercpo: row.tercpo ?? '',
+      terpob: row.terpob ?? '',
+      terayt: row.terayt ?? '',
+      terfax: row.terfax ?? '',
+      terweb: row.terweb ?? '',
+      tercoe: row.tercoe ?? '',
+      terobs: row.terobs ?? ''
+    }));
+
     const columns = [
-      'tercod', 'ternom', 'terali', 'ternif', 'terdom', 'tercpo', 'terpob',
-      'tertel', 'terfax', 'terweb', 'tercoe', 'terobs', 'terayt'
+      { header: '#', key: 'index' },
+      { header: 'Código', key: 'tercod' },
+      { header: 'Nombre', key: 'ternom' },
+      { header: 'NIF', key: 'ternif' },
+      { header: 'Alias', key: 'terali' },
+      { header: 'Teléfono', key: 'tertel' },
+      { header: 'Domicilio', key: 'terdom' },
+      { header: 'Código Postal', key: 'tercpo' },
+      { header: 'Municipio', key: 'terpob' },
+      { header: 'Código contable', key: 'terayt' },
+      { header: 'Fax', key: 'terfax' },
+      { header: 'Web', key: 'terweb' },
+      { header: 'Correo electrónico', key: 'tercoe' },
+      { header: 'Observaciones', key: 'terobs' }
     ];
 
     const csvRows = [
-      columns.map(col => `"${col}"`).join(',')
+      columns.map(col => `"${col.header}"`).join(';'),
+      ...rows.map(row =>
+        columns
+          .map(col => `"${row[col.key as keyof typeof row] ?? ''}"`)
+          .join(';')
+      )
     ];
-
-    data.forEach(row => {
-      const values = columns.map(col => `"${row[col] !== undefined ? row[col] : ''}"`);
-      csvRows.push(values.join(','));
-    });
 
     const csvContent = csvRows.join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'proveedores.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'proveedores.csv';
     link.click();
-    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
-  showContactPersonsGrid = false;
-  contactPersons: any = null;
-  personasContactoError: string = '';
-  showContactPersons(proveedore: any){
-    this.messageError = '';
-    this.messageSuccess = '';
-    this.showContactPersonsGrid = true;
-    this.showArticulosGrid = false;
-    this.selectedProveedor = proveedore;
-    this.personasContactoError = ''
-    this.articuloError = '';
-    const tercod = proveedore.tercod;
-
-    this.http.get<any[]>(`${environment.backendUrl}/api/more/by-tpe/${this.entcod}/${tercod}`)
-      .subscribe({ next: (response) => {
-        const respArray = Array.isArray(response) ? response : (response ? [response] : []);
-        if (respArray.length === 0) { 
-          this.contactPersons = null;           
-          this.personasContactoError = 'No se encontraron personas de contacto.';
-        } else {
-          this.contactPersons = respArray[0];
-          this.personasContactoError = '';
-         }
-          this.page = 0;
-      },
-      error: (err) => {
-        this.personasContactoError = 'No se encontraron personas de contacto.';
-        this.contactPersons = [];
-        this.page = 0;
-      } 
-    });
-  }
-
-  showArticulosGrid = false;
-  articulos: any = null;
-  articuloError: string = '';
-  showArticulos(proveedore: any){
-    this.messageSuccess = ''
-    this.showArticulosGrid = true;
-    this.showContactPersonsGrid = false;
-    this.selectedProveedor = proveedore;
-    const tercod = proveedore.tercod;
-    this.articuloError = ''
-    this.personasContactoError = ''
-    
-    this.http.get<any[]>(`${environment.backendUrl}/api/more/by-apr/${this.entcod}/${tercod}`)
-      .subscribe({ next: (response) => {
-        this.articulos = Array.isArray(response) ? response : (response ? [response] : []);
-
-        this.articulos.forEach((row: any, index: number) => {
-          const artcod = String(row?.artcod ?? '').trim();
-          const afacod = String(row?.afacod ?? '').trim();
-          const asucod = String(row?.asucod?? '').trim();
-          this.getDescription(row, index, artcod, afacod, asucod);
-          this.anadirmessage = '';
-          this.anadirErrorMessage = '';
-        });
-
-        if (response.length === 0) {
-          this.articuloError = 'No se encontraron artículos.';
-        }
-        this.page = 0;
-      },
-      error: (err) => {
-        this.articuloError = 'No se encontraron artículos.';
-      } 
-    });
-  }
-
-  getDescription(row: any, index: number, artcod: string, afacod: string, asucod: string){
-    if (artcod === '*') {
-      if (asucod === '*') {
-        this.http
-          .get<any[]>(`${environment.backendUrl}/api/afa/art-name/${this.entcod}/${afacod}`)
-          .subscribe({
-            next: (response) => {
-              const respArray = Array.isArray(response) ? response : response ? [response] : [];
-              const afades = respArray[0]?.afades;
-              row.description = String(afades ?? '').trim();
-            },
-          });
-      } else {
-        this.http
-          .get<any[]>(`${environment.backendUrl}/api/asu/art-name/${this.entcod}/${afacod}/${asucod}`)
-          .subscribe({
-            next: (response) => {
-              const respArray = Array.isArray(response) ? response : response ? [response] : [];
-              const asudes = respArray[0]?.asudes;
-              row.description = String(asudes ?? '').trim();
-            },
-          });
-      }
-    } else {
-      this.http
-        .get<any[]>(`${environment.backendUrl}/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`)
-        .subscribe({
-          next: (response) => {
-            const respArray = Array.isArray(response) ? response : response ? [response] : [];
-            const artdes = respArray[0]?.artdes;
-            row.description = String(artdes ?? '').trim();
-          },
-        });
-    }
-  }
-  
   messageSuccess: string = '';
   messageError: string = '';
   saveChanges() {
-    const updateFields ={
+    this.isUpdating = true;
+    this.limpiarMessages();
+    const payload ={
       TERWEB : this.selectedProveedor.terweb,
       TEROBS : this.selectedProveedor.terobs,
       TERBLO : this.selectedProveedor.terblo,
       TERACU : this.selectedProveedor.teracu
     }
 
-    this.http.put(`${environment.backendUrl}/api/ter/updateFields/${this.selectedProveedor.tercod}`, updateFields, { responseType: 'text' }
+    this.http.put(`${environment.backendUrl}/api/ter/updateFields/${this.entcod}/${this.selectedProveedor.tercod}`, payload, { responseType: 'text' }
     ).subscribe({
       next: (res) => {
         this.messageSuccess = 'Proveedor actualizado correctamente';
+        this.isUpdating = false;
       },
       error: (err) => {
-        console.error('Error:', err);
-        this.messageError = 'Error al guardar el proveedor';
+        this.messageError = err?.error || 'Error al guardar el proveedor'
+        this.isUpdating = false;
       }
     });
   }
@@ -582,117 +528,182 @@ export class ProveedoreesComponent {
     }
   }
 
-  personasContactoErrorMessage: string = '';
-  personasContactoSuccessMessage: string = '';
-  updatepersonas(){
-    this.personasContactoErrorMessage = '';
-    this.personasContactoSuccessMessage = '';
-
-    const updateFields = {
-      TPENOM : this.contactPersons.tpenom,
-      TPETEL : this.contactPersons.tpetel,
-      TPETMO : this.contactPersons.tpetmo,
-      TPECOE : this.contactPersons.tpecoe,
-      TPEOBS : this.contactPersons.tpeobs
-    }
-    this.http.put(
-      `${environment.backendUrl}/api/more/modify/${this.selectedProveedor.tercod}`,
-      updateFields,
-      { responseType: 'text' }
-    ).subscribe({
-      next: (res) => {
-        this.personasContactoSuccessMessage = 'Persona de contacto actualizada correctamente';
-      },
-      error: (err) => {
-        console.error('Error:', err);
-        this.personasContactoErrorMessage = 'Error al guardar la persona de contacto';
-      }
-    });
-  }
-
-  deletepersona(){
-    this.http.delete(
-      `${environment.backendUrl}/api/more/delete/${this.selectedProveedor.tercod}`,
-      { responseType: 'text' }).subscribe({
-        next: (res) => {
-        this.personasContactoSuccessMessage = 'Persona de contacto eliminada correctamente';
-        this.contactPersons = null; 
-        },
-        error: (err) => {
-          console.error('Error:', err);
-          this.personasContactoErrorMessage = 'Error al eliminar la persona de contacto';
-        }
-      });
-  }
-
   onApracuChange(articulo: any, event: Event) {
     const input = event.target as HTMLInputElement;
     articulo.apracu = input.checked ? 1 : 0;
   }
 
-  articuloSuccessMessage: string = '';
-  articuloErrorMessage: string = '';
-  updatearticulos(articulo: any){
-    this.articuloSuccessMessage = '';
-    this.articuloErrorMessage = '';
+  //persona related functions
+  showPersonasGrid = false;
+  personaInfo: any = [];
+  showPersonas() {
+    this.limpiarMessages();
+    this.showPersonasGrid = true;
+    this.personaInfo = this.selectedProveedor;
+  }
 
-    const updateFields = {
-      ENT: this.entcod,
-      TERCOD: this.selectedProveedor.tercod,
-      AFACOD : articulo.afacod,
-      ASUCOD : articulo.asucod,
-      ARTCOD : articulo.artcod,
-      APRREF : articulo.aprref,
-      APRUEM : articulo.apruem,
-      APROBS : articulo.aprobs,
-      APRACU : articulo.apracu,
-      APRPRE : articulo.aprpre
+  hidePersonas() {
+    this.showPersonasGrid = false;
+  }
+
+  showContactPersonsGrid = false;
+  contactPersons: any = null;
+  activeDetailTab: 'contact' | 'articulo' | null = null;
+  showContactPersons(proveedore: any){
+    this.limpiarMessages();
+    this.showContactPersonsGrid = true;
+    this.activeDetailTab = 'contact';
+    this.showArticulosGrid = false;
+    this.selectedProveedor = proveedore;
+    const tercod = proveedore.tercod;
+
+    this.isLoading = true;
+    this.http.get<any[]>(`${environment.backendUrl}/api/more/by-tpe/${this.entcod}/${tercod}`)
+      .subscribe({ next: (response) => {
+        const respArray = Array.isArray(response) ? response : (response ? [response] : []);
+        if (respArray.length === 0) { 
+          this.contactPersons = null;           
+          this.personasContactoErrorMessage = 'No se encontraron personas de contacto.';
+          this.isLoading = false;
+        } else {
+          this.contactPersons = respArray;
+          this.personasContactoErrorMessage = '';
+          this.isLoading = false;
+        }
+          this.page = 0;
+      },
+      error: (err) => {
+        this.personasContactoErrorMessage = 'No se encontraron personas de contacto.';
+        this.contactPersons = [];
+        this.page = 0;
+        this.isLoading = false;
+      } 
+    });
+  }
+
+  personasContactoErrorMessage: string = '';
+  personasContactoSuccessMessage: string = '';
+  personaContactoaddError: string = '';
+  isAdding: boolean = false;
+  addPersonas(tpenom: string, tpetel: string, tpetmo: string, tpecoe: string, tpeobs: string) {
+    this.limpiarMessages();
+    this.isAdding = true;
+    const tercod = this.personaInfo.tercod;
+
+    if(!tpenom) {
+      this.personaContactoaddError = 'Nombre requirido'
+      return;
     }
 
+    const payload = {
+      "tpenom" : tpenom,
+      "tpetel" : tpetel,
+      "tpetmo" : tpetmo,
+      "tpecoe" : tpecoe,
+      "tpeobs" : tpeobs
+    }
+
+    this.http.post(`${environment.backendUrl}/api/more/add/${this.entcod}/${tercod}`, payload, { responseType: 'text' }).subscribe({
+      next: (res) => {
+        this.personasContactoSuccessMessage = 'Persona Agregado exitosamente';
+        this.hidePersonas();
+        this.reloadContactPersons();
+        this.isAdding = false;
+      },
+      error: (err) => {
+        this.personaContactoaddError = err.error ?? 'Se ha producido un error.';
+        this.isAdding = false;
+      }
+    })
+  }
+
+  reloadContactPersons() {
+    this.limpiarMessages();
+    if (!this.selectedProveedor) return;
+    this.showContactPersons(this.selectedProveedor);
+  }
+
+  isUpdating: boolean = false;
+  updatepersonas(tpecod: number, nom: string, telefon: string, movil: string, email: string, obs: string){
+    this.isUpdating = true;
+    this.limpiarMessages();
+    if (!nom) {
+      this.personasContactoErrorMessage = 'El nombre de la persona no debe estar vacío';
+      return;
+    }
+    const updateFields = {
+      tpenom : nom,
+      tpetel : telefon,
+      tpetmo : movil,
+      tpecoe : email,
+      tpeobs : obs
+    }
     this.http.put(
-      `${environment.backendUrl}/api/more/update-apr`,
+      `${environment.backendUrl}/api/more/modify/${this.entcod}/${this.selectedProveedor.tercod}/${tpecod}`,
       updateFields,
       { responseType: 'text' }
     ).subscribe({
       next: (res) => {
-        this.articuloSuccessMessage = 'Artículo actualizado correctamente';
+        this.personasContactoErrorMessage = '';
+        this.personasContactoSuccessMessage = 'Persona de contacto actualizada correctamente';
+        this.isUpdating = false;
       },
       error: (err) => {
-        console.error('Error:', err);
-        this.articuloErrorMessage = 'Error al guardar el artículo';
+        this.personasContactoSuccessMessage = '';
+        this.personasContactoErrorMessage = err?.error || 'Error al guardar la persona de contacto';
+        this.isUpdating = false;
       }
     });
   }
 
-  deletearticulo(articulo: any){
-    const params = [
-    `ent=${articulo.ent}`,
-    `tercod=${articulo.tercod}`,
-    `afacod=${articulo.afacod}`,
-    `asucod=${articulo.asucod}`,
-    `artcod=${articulo.artcod}`
-  ].join('&');
-
+  deletepersona(persona: any){
+    this.limpiarMessages();
+    this.isDeleting = true;
+    const tercod = persona.tercod;
+    const tpecod = persona.tpecod;
     this.http.delete(
-      `${environment.backendUrl}/api/more/delete-apr?${ params}`,
+      `${environment.backendUrl}/api/more/delete/${this.entcod}/${tercod}/${tpecod}`,
       { responseType: 'text' }).subscribe({
-        next: (res) => {
-        this.articuloSuccessMessage = 'Artículo eliminado correctamente';
-        this.articulos = this.articulos.filter((a: any) =>
-        !(a.ent === articulo.ent &&
-          a.tercod === articulo.tercod &&
-          a.afacod === articulo.afacod &&
-          a.asucod === articulo.asucod &&
-          a.artcod === articulo.artcod)
-      );
-        },
-        error: (err) => {
-          console.error('Error:', err);
-          this.articuloErrorMessage = 'Error al eliminar el artículo';
+      next: (res) => {
+        this.personasContactoSuccessMessage = 'Persona de contacto eliminada correctamente';
+        if (Array.isArray(this.contactPersons)) {
+          this.contactPersons = this.contactPersons.filter((p: any) =>
+            !(p.tercod === tercod && p.tpecod === tpecod)
+          );
         }
-      });
+        this.isDeleting = false;
+        this.closeDeletePersonas();
+      },
+      error: (err) => {
+        this.personasContactoErrorMessage = err.error ?? 'Error al eliminar la persona de contacto';
+        this.isDeleting = false;
+      }
+    });
   }
 
+  showDeletePersona = false;
+  personaToDelete: any = null;
+  openDeletePersonas(persona: any) {
+    this.limpiarMessages();
+    this.personaToDelete = persona;
+    console.log(this.personaToDelete)
+    this.showDeletePersona = true;
+  }
+
+  closeDeletePersonas() {
+    this.showDeletePersona = false;
+    this.personaToDelete = null;
+    this.limpiarMessages();
+  }
+
+  confirmDeletePersona() {
+    if (this.showDeletePersona) {
+      this.deletepersona(this.personaToDelete);
+    }
+  }
+
+  //articulos related functions
+  articuloSuccessMessage: string = '';
   showHelloGrid = false;
   selectedFamilia: string = '';
   selectedSubfamilia: string = '';
@@ -701,6 +712,7 @@ export class ProveedoreesComponent {
   asus: any[] = [];
   arts: any[] = [];
   showHello() {
+    this.limpiarMessages();
     this.searchValue = '';
     this.searchResults = [];
     this.searchType = 'familia';
@@ -713,6 +725,7 @@ export class ProveedoreesComponent {
   }
 
   hideHello() {
+    this.limpiarMessages();
     this.showHelloGrid = false;
     this.searchValue = '';
     this.searchResults = [];
@@ -721,37 +734,159 @@ export class ProveedoreesComponent {
     this.selectedFamilia = '';
     this.selectedSubfamilia = '';
     this.selectedArticulo = '';
-    this.anadirmessage = '';
-    this.anadirErrorMessage = '';
     this.afas = [];
     this.asus = [];
     this.arts = [];
   }
 
+  showArticulosGrid = false;
+  articulos: any = null;
+  articuloError: string = '';
+  showArticulos(proveedore: any){
+    this.limpiarMessages();
+    this.showArticulosGrid = true;
+    this.activeDetailTab = 'articulo';
+    this.showContactPersonsGrid = false;
+    this.selectedProveedor = proveedore;
+    const tercod = proveedore.tercod;
+    
+    this.isLoading = true;
+    this.http.get<any[]>(`${environment.backendUrl}/api/more/by-apr/${this.entcod}/${tercod}`)
+      .subscribe({ next: (response) => {
+        this.articulos = Array.isArray(response) ? response : (response ? [response] : []);
+
+        this.articulos.forEach((row: any, index: number) => {
+          const artcod = String(row?.artcod ?? '').trim();
+          const afacod = String(row?.afacod ?? '').trim();
+          const asucod = String(row?.asucod?? '').trim();
+          this.getDescription(row, index, artcod, afacod, asucod);
+          this.anadirmessage = '';
+          this.anadirErrorMessage = '';
+        });
+        this.isLoading = false;
+        if (response.length === 0) {
+          this.articuloError = 'No se encontraron artículos.';
+          this.isLoading = false;
+        }
+        this.page = 0;
+      },
+      error: (err) => {
+        this.articuloError = 'No se encontraron artículos.';
+        this.isLoading = false;
+      } 
+    });
+  }
+
+  updatearticulos(articulo: any){
+    this.limpiarMessages();
+    this.isUpdating = true; 
+
+    const tercod = this.selectedProveedor.tercod;
+    const afacod = articulo.afacod;
+    const asucod = articulo.asucod;
+    const artcud = articulo.artcod;
+
+    const updateFields = {
+      aprref : articulo.aprref,
+      apruem : articulo.apruem,
+      aprobs : articulo.aprobs,
+      apracu : articulo.apracu,
+      aprpre : articulo.aprpre
+    }
+
+    this.http.patch(`${environment.backendUrl}/api/more/update-apr/${this.entcod}/${tercod}/${afacod}/${asucod}/${artcud}`,updateFields,{ responseType: 'text' }).subscribe({
+      next: (res) => {
+        this.articuloError = '';
+        this.articuloSuccessMessage = 'Artículo actualizado correctamente';
+        this.isUpdating = false;
+      },
+      error: (err) => {
+        this.articuloSuccessMessage = '';
+        this.articuloError = err.error.error || err.error || 'Error al guardar el artículo';
+        this.isUpdating = false;
+      }
+    });
+  }
+
+  isDeleting: boolean = false;
+  deletearticulo(articulo: any){
+    this.isDeleting = true;
+    this.limpiarMessages();
+    const params = [
+    `ent=${articulo.ent}`,
+    `tercod=${articulo.tercod}`,
+    `afacod=${articulo.afacod}`,
+    `asucod=${articulo.asucod}`,
+    `artcod=${articulo.artcod}`
+  ].join('&');
+
+    this.http.delete(
+      `${environment.backendUrl}/api/more/delete-apr?${ params}`,
+      { responseType: 'text' }).subscribe({
+        next: (res) => {
+            this.articuloSuccessMessage = 'Artículo eliminado correctamente';
+            this.articulos = this.articulos.filter((a: any) =>
+            !(a.ent === articulo.ent &&
+              a.tercod === articulo.tercod &&
+              a.afacod === articulo.afacod &&
+              a.asucod === articulo.asucod &&
+              a.artcod === articulo.artcod)
+          );
+          this.isDeleting = false;
+          this.closeDeleteConfirm();
+        },
+        error: (err) => {
+          this.articuloError = 'Error al eliminar el artículo';
+          this.isDeleting = false;
+        }
+      });
+  }
+
+  showDeleteConfirm = false;
+  articuloToDelete: any = null;
+  openDeleteConfirm(articulo: any) {
+    console.log(articulo)
+    this.articuloToDelete = articulo;
+    this.showDeleteConfirm = true;
+  }
+
+  closeDeleteConfirm() {
+    this.showDeleteConfirm = false;
+    this.articuloToDelete = null;
+    this.limpiarMessages();
+  }
+
+  confirmDelete() {
+    if (this.articuloToDelete) {
+      this.deletearticulo(this.articuloToDelete);
+    }
+  }
+
   anadirErrorMessage: string = '';
   anadirmessage: string = '';
   addArticulo(){
+    this.isAdding = true;
+    this.limpiarMessages();
     const newArticulo = {
-      ENT: this.entcod,
-      TERCOD: this.selectedProveedor.tercod,
-      AFACOD: this.selectedFamilia || '*',
-      ASUCOD: this.selectedSubfamilia || '*',
-      ARTCOD: this.selectedArticulo || '*',
+      ent: this.entcod,
+      tercod: this.selectedProveedor.tercod,
+      afacod: this.selectedFamilia || '*',
+      asucod: this.selectedSubfamilia || '*',
+      artcod: this.selectedArticulo || '*',
     };
 
     if ((this.articulos ?? []).some((a: any) =>
-      (a.afacod ?? '*') === newArticulo.AFACOD &&
-      (a.asucod ?? '*') === newArticulo.ASUCOD &&
-      (a.artcod ?? '*') === newArticulo.ARTCOD)) {
+      (a.afacod ?? '*') === newArticulo.afacod &&
+      (a.asucod ?? '*') === newArticulo.asucod &&
+      (a.artcod ?? '*') === newArticulo.artcod)) {
       this.anadirErrorMessage = 'El artículo ya está en la lista.';
+      this.isAdding = false;
       return;
     }
 
+    console.log(newArticulo)
     this.http.post(
-      `${environment.backendUrl}/api/more/add-apr`,
-      newArticulo,
-      { responseType: 'text' }
-    ).subscribe({
+      `${environment.backendUrl}/api/more/add-apr`,newArticulo, { responseType: 'text' }).subscribe({
       next: (res) => {
         this.anadirmessage = 'Artículo añadido correctamente';
 
@@ -774,41 +909,30 @@ export class ProveedoreesComponent {
 
           this.getDescription(newRow, index, artcod, afacod, asucod);
           this.articuloSuccessMessage = '';
-          this.articuloErrorMessage = '';
+          this.articuloError = '';
         }
+        this.isAdding = false;
       },
       error: (err) => {
-        console.error('Error:', err);
-        this.anadirmessage = 'Error al añadir el artículo';
+        this.anadirErrorMessage = 'Error al añadir el artículo';
+        this.isAdding = false;
       }
     });
   }
 
-  showDeleteConfirm = false;
-  articuloToDelete: any = null;
-  openDeleteConfirm(articulo: any) {
-    this.articuloToDelete = articulo;
-    this.showDeleteConfirm = true;
-  }
-
-  closeDeleteConfirm() {
-    this.showDeleteConfirm = false;
-    this.articuloToDelete = null;
-    this.articuloSuccessMessage = '';
-    this.articuloErrorMessage = '';
-  }
-
-  confirmDelete() {
-    if (this.articuloToDelete) {
-      this.deletearticulo(this.articuloToDelete);
-      this.closeDeleteConfirm();
-    }
+  selectedSearchRow: any = null;
+  selectSearchRow(item: any) {
+    this.selectedSearchRow = item;
+    this.selectedFamilia = item.afacod;
+    this.selectedSubfamilia = item.asucod;
+    this.selectedArticulo = item.artcod;
   }
 
   searchType: string = 'familia';
   searchValue: string = '';
   searchResults: any[] = [];
   onSearch() {
+    this.limpiarMessages();
     this.searchPage = 0;
     this.searchResults = [];
     if (!this.searchValue || !this.searchType) return;
@@ -854,32 +978,60 @@ export class ProveedoreesComponent {
     return Math.ceil(this.searchResults.length / this.searchPageSize);
   }
 
-  selectedSearchRow: any = null;
-  selectSearchRow(item: any) {
-      this.selectedSearchRow = item;
-      this.selectedFamilia = item.afacod;
-      this.selectedSubfamilia = item.asucod;
-      this.selectedArticulo = item.artcod;
+  getDescription(row: any, index: number, artcod: string, afacod: string, asucod: string){
+    if (artcod === '*') {
+      if (asucod === '*') {
+        this.http
+          .get<any[]>(`${environment.backendUrl}/api/afa/by-ent/${this.entcod}/${afacod}`)
+          .subscribe({
+            next: (response) => {
+              const respArray = Array.isArray(response) ? response : response ? [response] : [];
+              const afades = respArray[0]?.afades;
+              row.description = String(afades ?? '').trim();
+            },
+          });
+      } else {
+        this.http
+          .get<any[]>(`${environment.backendUrl}/api/asu/art-name/${this.entcod}/${afacod}/${asucod}`)
+          .subscribe({
+            next: (response) => {
+              const respArray = Array.isArray(response) ? response : response ? [response] : [];
+              const asudes = respArray[0]?.asudes;
+              row.description = String(asudes ?? '').trim();
+            },
+          });
+      }
+    } else {
+      this.http
+        .get<any[]>(`${environment.backendUrl}/api/art/art-name/${this.entcod}/${afacod}/${asucod}/${artcod}`)
+        .subscribe({
+          next: (response) => {
+            const respArray = Array.isArray(response) ? response : response ? [response] : [];
+            const artdes = respArray[0]?.artdes;
+            row.description = String(artdes ?? '').trim();
+          },
+        });
+    }
   }
 
+  //adding from webservice proveedores related functions
   showProveedorModal = false;
   anadirProveedorErrorMessage: string = '';
   openProveedorModal(): void {
     this.showProveedorModal = true;
-    this.anadirProveedorErrorMessage = '';
+    this.limpiarMessages();
     this.resetProveedorModalState();
     this.onProveedorFetch();
   }
 
   closeProveedorModal(): void {
     this.showProveedorModal = false;
-    this.clearMessages();
+    this.limpiarMessages();
     this.resetProveedorModalState();
   }
 
   private resetProveedorModalState(): void {
-    this.anadirProveedorErrorMessage = '';
-    this.searchProveedor = '';
+    this.limpiarMessages();
     this.proveedoresSearchPage = 0;
 
     if (this.fullProveedoresSearchResults && this.fullProveedoresSearchResults.length) {
@@ -938,6 +1090,7 @@ export class ProveedoreesComponent {
   }
 
   onProveedorSearch(){
+    this.limpiarMessages();
     const q = (this.searchProveedor || '').toString().trim();
     if (!this.searchAdd) {
       this.anadirProveedorErrorMessage = 'Selecciona tipo de búsqueda';
@@ -1000,7 +1153,7 @@ export class ProveedoreesComponent {
 
   clearSelectedProveedores() {
     this.selectedProveediresFromResults = [];
-    this.clearMessages();
+    this.limpiarMessages();
   }
 
   private proveedorExistsInMainList(candidate: any): boolean {
@@ -1013,6 +1166,7 @@ export class ProveedoreesComponent {
 
   guardarMessageProveedor: string = '';
   saveProveedorees() {
+    this.limpiarMessages();
     const ent = this.entcod;
 
     if (!this.selectedProveediresFromResults || this.selectedProveediresFromResults.length === 0) {
@@ -1048,7 +1202,7 @@ export class ProveedoreesComponent {
       : new HttpHeaders({ 'Content-Type': 'application/json' });
 
     this.isSaving = true;
-    this.clearMessages();
+    this.limpiarMessages();
     this.http.post<any[]>(`${environment.backendUrl}/api/ter/save-proveedores/${ent}`, payload, { headers, observe: 'response', responseType: 'text' as 'json' })
       .subscribe({
         next: (res) => {
@@ -1066,35 +1220,7 @@ export class ProveedoreesComponent {
       })
   }
 
-  clearMessages(){
-    this.anadirProveedorErrorMessage = '';
-    this.guardarMessageProveedor = '';
-    this.anadirProveedorErrorMessage = '';
-  }
-
   isSaving = false;
-  saveError = '';
-  saveSuccess = '';
-  private messageTimeout: any = null;
-
-
-  confirmDeleteSelected() {
-    if (!this.selectedProveediresFromResults || this.selectedProveediresFromResults.length === 0) {
-      this.saveError = 'No hay elementos seleccionados para eliminar.';
-      return;
-    }
-    const ok = confirm(`Eliminar ${this.selectedProveediresFromResults.length} proveedor(es) de la lista local? Esta acción solo afecta la lista local.`);
-    if (ok) this.deleteSelectedFromResults();
-  }
-
-  deleteSelectedFromResults() {
-    const toRemove = new Set(this.selectedProveediresFromResults.map((s: any) => `${s.ENT}|${s.TERNOM}|${s.TERNIF}`));
-    this.proveedoresSearchResults = this.proveedoresSearchResults.filter((p: any) => !toRemove.has(`${p.ENT}|${p.TERNOM}|${p.NIF || p.TERNIF}`));
-    this.fullProveedoresSearchResults = this.fullProveedoresSearchResults.filter((p: any) => !toRemove.has(`${p.ENT}|${p.TERNOM}|${p.NIF || p.TERNIF}`));
-    this.clearSelectedProveedores();
-    this.saveSuccess = 'Elementos eliminados de la lista local';
-  }
-
   proveedoresSearchPage: number = 0;
   proveedoresSearchPageSize: number = 10;
   get paginatedProveedoresSearchResults() {
@@ -1112,5 +1238,51 @@ export class ProveedoreesComponent {
 
   proveedoresSearchNext() {
     if (this.proveedoresSearchPage + 1 < this.proveedoresSearchTotalPages) this.proveedoresSearchPage++;
+  }
+
+  //main table width adjustment related functions
+  private startX: number = 0;
+  private startWidth: number = 0;
+  private resizingColIndex: number | null = null;
+  startResize(event: MouseEvent, colIndex: number) {
+    this.resizingColIndex = colIndex;
+    this.startX = event.pageX;
+    const th = (event.target as HTMLElement).parentElement as HTMLElement;
+    this.startWidth = th.offsetWidth;
+
+    document.addEventListener('mousemove', this.onResizeMove);
+    document.addEventListener('mouseup', this.stopResize);
+  }
+
+  onResizeMove = (event: MouseEvent) => {
+    if (this.resizingColIndex === null) return;
+    const table = document.querySelector('.main-table') as HTMLTableElement;
+    if (!table) return;
+    const th = table.querySelectorAll('th')[this.resizingColIndex] as HTMLElement;
+    if (!th) return;
+    const diff = event.pageX - this.startX;
+    th.style.width = (this.startWidth + diff) + 'px';
+  };
+
+  stopResize = () => {
+    document.removeEventListener('mousemove', this.onResizeMove);
+    document.removeEventListener('mouseup', this.stopResize);
+    this.resizingColIndex = null;
+  };
+
+  //mist
+  limpiarMessages() {
+    this.error = '';
+    this.messageError = '';
+    this.messageSuccess = '';
+    this.personasContactoErrorMessage = '';
+    this.personasContactoSuccessMessage = '';
+    this.articuloError = '';
+    this.articuloSuccessMessage = '';
+    this.personaContactoaddError = '';
+    this.anadirmessage = '';
+    this.anadirErrorMessage = '';
+    this.guardarMessageProveedor = '';
+    this.anadirProveedorErrorMessage = '';
   }
 }

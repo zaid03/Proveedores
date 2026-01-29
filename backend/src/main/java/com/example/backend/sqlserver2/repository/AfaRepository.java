@@ -21,40 +21,11 @@ public interface AfaRepository extends JpaRepository<Afa, AfaId> {
     // Method to find afa records by ent and afacod using like
     List<Afa> findByENTAndAFADESContaining(int ent, String afades);
 
-    //find an art name
-    @Query("SELECT a FROM Afa a WHERE a.ENT = :ent AND a.AFACOD = :afacod")
-    List <Afa> getArtName(@Param("ent") int ent, @Param("afacod") String afacod);
-
     //find familias by ent
     List<Afa> findByENT(int ent);
-
-    //update description of familias
-    @Modifying
-    @Transactional
-    @Query("""
-        UPDATE Afa a
-        SET
-            a.AFADES = :AFADES
-        WHERE
-            a.ENT = :ENT
-            AND a.AFACOD = :AFACOD
-    """)
-    int updateFamilia(
-        @Param("AFADES") String AFADES,
-        @Param("ENT") Integer ENT,
-        @Param("AFACOD") String AFACOD
-    );
 
     //deleting a familia
     @Modifying
     @Transactional
-    @Query("""
-        DELETE FROM Afa a
-        WHERE a.ENT = :ENT
-          AND a.AFACOD = :AFACOD
-    """)
-    int deleteByEntAndAfacod(
-        @Param("ENT") Integer ENT,
-        @Param("AFACOD") String AFACOD
-    );
+    int deleteByENTAndAFACOD(Integer ENT, String AFACOD);
 }
